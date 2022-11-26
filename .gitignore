@@ -1,0 +1,4 @@
+Build/*
+main.code-workspace
+Makefile
+.vscode/*
