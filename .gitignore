@@ -2,3 +2,5 @@ Build/*
 main.code-workspace
 Makefile
 .vscode/*
+main.exe
+.vs/*

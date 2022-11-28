@@ -2,12 +2,25 @@
 
 [X] Set up repository
 <br>
-[/] Set up environment 
+[X] Set up environment 
 <br>
-[/] Set up template for the project
+[X] Set up template for the project
 <br>
-[/] Start the development
+[X] Start the development
+<br>
+[ ] 
 <br>
 [ ] TBA
 <br>
 [ ] TBA
+<br>
+[ ] TBA
+<br>
+[ ] TBA
+<br>
+[ ] TBA
+<br>
+[ ] TBA
+<br>
+[ ] TBA
+<br>
