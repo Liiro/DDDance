@@ -1,161 +1,256 @@
-/***
- *
- *   raylib [core] example - Basic window
- *
- *   Welcome to raylib!
- *
- *   To test examples, just press F6 and execute raylib_compile_execute script
- *   Note that compiled executable is placed in the same folder as .c file
- *
- *   You can find all basic examples on C:\raylib\raylib\examples folder or
- *   raylib official webpage: www.raylib.com
- *
- *   Enjoy using raylib. 🙂
- *
- *   Example originally created with raylib 1.0, last time updated with raylib 1.0
- *
- *   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
- *   BSD-like license that allows static linking with closed source software
- *
- *   Copyright (c) 2013-2022 Ramon Santamaria (@raysan5)
- *
- **/
 
 #include "raylib.h"
-#include <string>
-#include <iostream>
 #include <vector>
+#include <list>
+#include <algorithm>
 
-#define MAX_FRAME_DELAY 20
-#define MIN_FRAME_DELAY 1
+constexpr int SPEED = 5;
 
-constexpr float CIRCLE_SPEED_PIXEL = 3.f;
-constexpr int CIRCLE_SIZE_PIXELS = 20;
+struct vector2
+{
+
+    float x;
+    float y;
+};
+
+//---------- Arrow ---------------------
+class Arrow
+{
+public:
+    vector2 position = {};
+    vector2 direction = {};
+
+    bool appear = false;
+
+    virtual void render();
+    virtual void update();
+
+    virtual inline ~Arrow() = default;
+};
+
+void Arrow::render()
+{
+
+    // draw
+    DrawCircle(position.x, position.y, 30, BLACK);
+}
+
+void Arrow::update()
+{
+}
+
+class LEFT_ARROW : public Arrow
+{
+
+public:
+    void update() override
+    {
+
+        position.y += direction.y * SPEED;
+    }
+};
+
+class RIGHT_ARROW : public Arrow
+{
+
+public:
+    void update() override
+    {
+
+        position.y += direction.y * SPEED;
+    }
+};
+
+class UP_ARROW : public Arrow
+{
+
+public:
+    void update() override
+    {
+
+        position.y += direction.y * SPEED;
+    }
+};
+
+class DOWN_ARROW : public Arrow
+{
+
+public:
+    void update() override
+    {
+
+        position.y += direction.y * SPEED;
+    }
+};
+
+//---------- Level ---------------------
+
+class Level
+{
+private:
+    std::list<LEFT_ARROW> l_arrows = {};
+    std::list<RIGHT_ARROW> r_arrows = {};
+    std::list<UP_ARROW> u_arrows = {};
+    std::list<DOWN_ARROW> d_arrows = {};
+
+    std::vector<Arrow *> all_arrows = {};
+
+public:
+    void add_arrow(const LEFT_ARROW &l_a);
+    void add_arrow(const RIGHT_ARROW &r_a);
+    void add_arrow(const UP_ARROW &u_a);
+    void add_arrow(const DOWN_ARROW &d_a);
+
+    void remove_all_arrows();
+
+    void init();
+    void update();
+    void render();
+};
+
+void Level::add_arrow(const LEFT_ARROW &l_a)
+{
+    l_arrows.push_back(l_a);
+    all_arrows.push_back(&l_arrows.back());
+}
+
+void Level::add_arrow(const RIGHT_ARROW &r_a)
+{
+    r_arrows.push_back(r_a);
+    all_arrows.push_back(&r_arrows.back());
+}
+void Level::add_arrow(const UP_ARROW &u_a)
+{
+    u_arrows.push_back(u_a);
+    all_arrows.push_back(&u_arrows.back());
+}
+void Level::add_arrow(const DOWN_ARROW &d_a)
+{
+    d_arrows.push_back(d_a);
+    all_arrows.push_back(&d_arrows.back());
+}
+
+void Level::remove_all_arrows()
+{
+
+    auto new_last_entity = std::remove_if(all_arrows.begin(), all_arrows.end(), [](const Arrow *a) -> bool
+                                          { return a->appear; });
+    all_arrows.erase(new_last_entity, all_arrows.end());
+
+    l_arrows.remove_if([](const LEFT_ARROW &la) -> bool
+                       { return la.appear; });
+    r_arrows.remove_if([](const RIGHT_ARROW &ra) -> bool
+                       { return ra.appear; });
+    u_arrows.remove_if([](const UP_ARROW &ua) -> bool
+                       { return ua.appear; });
+    d_arrows.remove_if([](const DOWN_ARROW &da) -> bool
+                       { return da.appear; });
+}
+
+void Level::init()
+{
+}
+
+void Level::update()
+{
+
+    LEFT_ARROW la = {};
+    la.position = {20, 0};
+    la.direction = {0, 1};
+
+    add_arrow(la);
+
+    RIGHT_ARROW ra = {};
+    ra.position = {60, 0};
+    ra.direction = {0, 1};
+
+    add_arrow(ra);
+
+    UP_ARROW ua = {};
+    ua.position = {100, 0};
+    ua.direction = {0, 1};
+
+    add_arrow(ua);
+
+    DOWN_ARROW da = {};
+    da.position = {140, 0};
+    da.direction = {0, 1};
+
+    add_arrow(da);
+
+    for (Arrow *arrows : all_arrows)
+    {
+        arrows->update();
+    }
+
+    remove_all_arrows();
+}
+
+void Level::render()
+{
+
+    LEFT_ARROW la = {};
+    la.position = {20, 0};
+    la.direction = {0, 1};
+
+    add_arrow(la);
+
+    RIGHT_ARROW ra = {};
+    ra.position = {60, 0};
+    ra.direction = {0, 1};
+
+    add_arrow(ra);
+
+    UP_ARROW ua = {};
+    ua.position = {100, 0};
+    ua.direction = {0, 1};
+
+    add_arrow(ua);
+
+    DOWN_ARROW da = {};
+    da.position = {140, 0};
+    da.direction = {0, 1};
+
+    add_arrow(da);
+
+    for (Arrow *arrows : all_arrows)
+    {
+        arrows->render();
+    }
+
+    remove_all_arrows();
+}
 
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
 int main(void)
 {
-    // Initialization
-    //-------------------------------------------------------------------------------------------------------
+    Level level;
 
-    constexpr int screenWidth = 1400;
-    constexpr int screenHeight = 850;
-    int animFrames = 0;
+    const int screenWidth = 800;
+    const int screenHeight = 450;
 
-    InitWindow(screenWidth, screenHeight, "DDDance!!!");
-    InitAudioDevice();
-
-    unsigned int nextFrameDataOffset = 0;
-
-    int currentAnimFrame = 0; // Current animation frame to load and draw
-    int frameDelay = 8;       // Frame delay to switch between animation frames
-    int frameCounter = 0;     // General frames counter
-
-    Sound mosik = LoadSound("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\awo.wav");
-
-    Image pepemosik = LoadImageAnim("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\mosik.gif", &animFrames);
-
-    Texture2D pepeTexture = LoadTextureFromImage(pepemosik);
-
-    Texture2D texture = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\audacity.png");
-
-    Texture2D arrowDown = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowDown.png");
-    Texture2D arrowUp = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowUp.png");
-    Texture2D arrowLeft = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowLeft.png");
-    Texture2D arrowRight = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowRight.png");
+    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
+
+    level.init();
+
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
+        level.update();
 
-        // Update
-        //-------------------------------------------------------------------------------------------------------
-        frameCounter++;
-        if (frameCounter >= frameDelay)
-        {
-            currentAnimFrame++;
-            if (currentAnimFrame >= animFrames)
-                currentAnimFrame = 0;
-
-            nextFrameDataOffset = pepemosik.width * pepemosik.height * 4 * currentAnimFrame;
-            UpdateTexture(pepeTexture, ((unsigned char *)pepemosik.data) + nextFrameDataOffset);
-
-            frameCounter = 0;
-        }
-        // control pepe speed
-        if (IsKeyPressed(KEY_RIGHT))
-            frameDelay++;
-        else if (IsKeyPressed(KEY_LEFT))
-            frameDelay--;
-        if (frameDelay > MAX_FRAME_DELAY)
-            frameDelay = MAX_FRAME_DELAY;
-        else if (frameDelay < MIN_FRAME_DELAY)
-            frameDelay = MIN_FRAME_DELAY;
-
-        // control mosik playing status ON OFF
-        if (IsKeyPressed(KEY_SPACE))
-        {
-            IsSoundPlaying(mosik) ? PauseSound(mosik) : PlaySound(mosik);
-        };
-
-        // do something when we press W S A D keys
-        if (IsKeyPressed(KEY_W))
-        {
-            /* code */
-        }
-        if (IsKeyPressed(KEY_S))
-        {
-            /* code */
-        }
-        if (IsKeyPressed(KEY_A))
-        {
-            /* code */
-        }
-        if (IsKeyPressed(KEY_D))
-        {
-            /* code */
-        }
-
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here.
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //-----------------------------------------------------------------------------------------------------
         BeginDrawing();
-        ClearBackground(WHITE);
+        level.render();
 
-        IsSoundPlaying(mosik) ? DrawText("Press SPACE to PAUSE MOSIK!", 600, 180, 30, LIGHTGRAY) : DrawText("Press SPACE to PLAY MOSIK!", 600, 180, 30, LIGHTGRAY);
-
-        DrawTexture(texture, 0, 0, WHITE); // does show up issue was the image path
-
-        DrawText("Press LEFT to make PEPE DANCE FASTER!", 700, 700, 30, LIGHTGRAY);
-
-        DrawText("Press RIGHT to make PEPE DANCE SLOWER!", 700, 800, 30, LIGHTGRAY);
-
-        DrawTexture(pepeTexture, 900, 400, WHITE);
-
-        DrawTexture(arrowDown, 800, 450, BLACK);
-        DrawTexture(arrowUp, 800, 350, BLACK);
-        DrawTexture(arrowLeft, 700, 400, BLACK);
-        DrawTexture(arrowRight, 900, 400, BLACK);
+        ClearBackground(RAYWHITE);
 
         EndDrawing();
-        //-----------------------------------------------------------------------------------------------------
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    UnloadSound(mosik);         // Unload sound data
-    CloseAudioDevice();         // Close audio device
-    UnloadTexture(pepeTexture); // Unload texture
-    UnloadImage(pepemosik);     // Unload image (contains all frames)
-    CloseWindow();              // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
+    CloseWindow(); // Close window and OpenGL context
 
     return 0;
 }
