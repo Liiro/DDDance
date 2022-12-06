@@ -40,13 +40,14 @@ int main(void)
     // Initialization
     //-------------------------------------------------------------------------------------------------------
 
+    int random_float = 0.1f;
+
+    InitAudioDevice();
     constexpr int screenWidth = 1400;
     constexpr int screenHeight = 850;
-    int animFrames = 0;
-
     InitWindow(screenWidth, screenHeight, "DDDance!!!");
-    InitAudioDevice();
 
+    int animFrames = 0;
     unsigned int nextFrameDataOffset = 0;
 
     int currentAnimFrame = 0; // Current animation frame to load and draw
@@ -54,14 +55,19 @@ int main(void)
     int frameCounter = 0;     // General frames counter
 
     Sound mosik = LoadSound("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\awo.wav");
+    Sound kuso = LoadSound("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\kuso.wav");
+    Sound hitsound = LoadSound("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\hitSound.wav");
 
     Image pepemosik = LoadImageAnim("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\mosik.gif", &animFrames);
+    Image pepemosikdos = LoadImageAnim("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\mosikDos.gif", &animFrames);
 
     Texture2D pepeTexture = LoadTextureFromImage(pepemosik);
+    Texture2D pepeTexturedos = LoadTextureFromImage(pepemosikdos);
 
     Texture2D texture = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\audacity.png");
 
     Texture2D arrowDown = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowDown.png");
+    Image arrowDownImg = LoadImage("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowDown.png"); // NOT WORKING
     Texture2D arrowUp = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowUp.png");
     Texture2D arrowLeft = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowLeft.png");
     Texture2D arrowRight = LoadTexture("C:\\Users\\Liash\\Desktop\\DDDance\\Source\\resources\\arrowRight.png");
@@ -74,6 +80,7 @@ int main(void)
 
         // Update
         //-------------------------------------------------------------------------------------------------------
+
         frameCounter++;
         if (frameCounter >= frameDelay)
         {
@@ -83,9 +90,12 @@ int main(void)
 
             nextFrameDataOffset = pepemosik.width * pepemosik.height * 4 * currentAnimFrame;
             UpdateTexture(pepeTexture, ((unsigned char *)pepemosik.data) + nextFrameDataOffset);
+            nextFrameDataOffset = pepemosikdos.width * pepemosikdos.height * 4 * currentAnimFrame;
+            UpdateTexture(pepeTexturedos, ((unsigned char *)pepemosikdos.data) + nextFrameDataOffset);
 
             frameCounter = 0;
         }
+
         // control pepe speed
         if (IsKeyPressed(KEY_RIGHT))
             frameDelay++;
@@ -105,19 +115,23 @@ int main(void)
         // do something when we press W S A D keys
         if (IsKeyPressed(KEY_W))
         {
-            /* code */
+            PlaySound(hitsound);
         }
         if (IsKeyPressed(KEY_S))
         {
-            /* code */
+            PlaySound(hitsound);
         }
         if (IsKeyPressed(KEY_A))
         {
-            /* code */
+            PlaySound(hitsound);
         }
         if (IsKeyPressed(KEY_D))
         {
-            /* code */
+            PlaySound(hitsound);
+        }
+        if (IsKeyPressed(KEY_K))
+        {
+            PlaySound(kuso);
         }
 
         //----------------------------------------------------------------------------------
@@ -129,20 +143,25 @@ int main(void)
         BeginDrawing();
         ClearBackground(WHITE);
 
-        IsSoundPlaying(mosik) ? DrawText("Press SPACE to PAUSE MOSIK!", 600, 180, 30, LIGHTGRAY) : DrawText("Press SPACE to PLAY MOSIK!", 600, 180, 30, LIGHTGRAY);
+        IsSoundPlaying(mosik) ? DrawText("Press SPACE to PAUSE MOSIK!", 400, 180, 30, LIGHTGRAY) : DrawText("Press SPACE to PLAY MOSIK!", 400, 180, 30, LIGHTGRAY);
+        DrawText("Press K to PLAY KUSO!", 400, 120, 30, LIGHTGRAY);
 
-        DrawTexture(texture, 0, 0, WHITE); // does show up issue was the image path
+        DrawTexture(texture, -300, 0, WHITE); // does show up issue was the image path
 
         DrawText("Press LEFT to make PEPE DANCE FASTER!", 700, 700, 30, LIGHTGRAY);
 
         DrawText("Press RIGHT to make PEPE DANCE SLOWER!", 700, 800, 30, LIGHTGRAY);
 
-        DrawTexture(pepeTexture, 900, 400, WHITE);
+        DrawTexture(pepeTexture, 700, 400, WHITE);
+        DrawTexture(pepeTexturedos, 1000, 200, WHITE);
 
-        DrawTexture(arrowDown, 800, 450, BLACK);
-        DrawTexture(arrowUp, 800, 350, BLACK);
-        DrawTexture(arrowLeft, 700, 400, BLACK);
-        DrawTexture(arrowRight, 900, 400, BLACK);
+        DrawTexture(arrowDown, 500, 450, BLACK);
+        ImageDrawPixel(&arrowDownImg, 560, 600, RED); // NOT WORKING
+        DrawTexture(arrowUp, 500, 350, BLACK);
+        DrawTexture(arrowLeft, 400, 400, BLACK);
+        DrawTexture(arrowRight, 600, 400, BLACK);
+
+        DrawCircle(20, 40, 16, RED);
 
         EndDrawing();
         //-----------------------------------------------------------------------------------------------------
@@ -150,11 +169,13 @@ int main(void)
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
-    UnloadSound(mosik);         // Unload sound data
-    CloseAudioDevice();         // Close audio device
-    UnloadTexture(pepeTexture); // Unload texture
-    UnloadImage(pepemosik);     // Unload image (contains all frames)
-    CloseWindow();              // Close window and OpenGL context
+    UnloadSound(mosik);            // Unload sound data
+    CloseAudioDevice();            // Close audio device
+    UnloadTexture(pepeTexture);    // Unload texture
+    UnloadImage(pepemosik);        // Unload image (contains all frames)
+    UnloadTexture(pepeTexturedos); // Unload texture
+    UnloadImage(pepemosikdos);     // Unload image (contains all frames)
+    CloseWindow();                 // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 
     return 0;
