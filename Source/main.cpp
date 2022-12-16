@@ -70,12 +70,13 @@ void do_main_menu_frame()
 
 void do_end_game_frame()
 {
-    int finalScore = declarationStruct.score;
-    UnloadGame();
-    InitGame();
+    StopSound(mosik.mySound);
 
     if (IsKeyPressed(KEY_SPACE))
     {
+        declarationStruct.score = 0;
+        hp1.width = 267;
+        PlaySound(mosik.mySound);
         states.push(State::GAME);
     }
 
@@ -96,7 +97,7 @@ void do_end_game_frame()
     ClearBackground(Color{173, 216, 230});
 
     DrawTexture(replaybuttonTexture.texture, 550, 250, WHITE);
-    DrawText(TextFormat("Score: %i", finalScore), 1050, 90, 30, BLACK);
+    DrawText(TextFormat("Score: %i", declarationStruct.score), 1050, 90, 30, BLACK);
 
     DrawText("Push Space To Replay", 550, 550, 30, BLACK);
 
