@@ -22,78 +22,86 @@
  **/
 
 #include "raylib.h"
+#include "level.hpp"
+#include <stack>
 #include <string>
-#include <iostream>
-#include <vector>
-#include <filesystem>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------------
-// Some Defines
+// Game State management
 //----------------------------------------------------------------------------------
-#define MAX_FRAME_DELAY 20
-#define MIN_FRAME_DELAY 1
-
-//------------------------------------------------------------------------------------
-// Global Variables Declaration
-//------------------------------------------------------------------------------------
-constexpr float CIRCLE_SPEED_PIXEL = 3.f;
-constexpr int CIRCLE_SIZE_PIXELS = 20;
-constexpr int screenWidth = 1400;
-constexpr int screenHeight = 850;
-int animFrames = 0;
-unsigned int nextFrameDataOffset = 0;
-int currentAnimFrame = 0; // Current animation frame to load and draw
-int frameDelay = 8;       // Frame delay to switch between animation frames
-int frameCounter = 0;     // General frames counter
-int score = 0;
-//----------------------------------------------------------------------------------
-// Types and Structures Definition
-//----------------------------------------------------------------------------------
-struct Sounds
+enum class State
 {
-    Sound mySound;
-} mosik, hitsound, kuso;
+    MAIN_MENU,
+    GAME,
+    END_GAME
+};
 
-struct Arrow
+std::stack<State> states;
+
+void do_main_menu_frame()
 {
-    Vector2 position;
-    Vector2 positionStatic;
-    Vector2 positionStaticBottom;
-    int speed;
-    bool active = true;
-    Texture2D texture;
-    Texture2D textureStatic;
-} ArrowUp, ArrowDown, ArrowLeft, ArrowRight;
 
-struct Textures
+    playbuttonImg.image = LoadImage("Source\\resources\\playbutton.png");
+    playbuttonTexture.texture = LoadTextureFromImage(playbuttonImg.image);
+
+    BeginDrawing();
+
+    ClearBackground(Color{173, 216, 230});
+
+    DrawTexture(playbuttonTexture.texture, 500, 180, WHITE);
+
+    DrawText("Push Space To Play", 480, 560, 40, BLACK);
+
+    EndDrawing();
+
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        InitGame();
+        states.push(State::GAME);
+    }
+
+    if (IsKeyPressed(KEY_E))
+    {
+        UnloadGame();
+        CloseWindow();
+    }
+}
+
+void do_end_game_frame()
 {
-    Vector2 position;
-    Texture2D texture;
-} Pepe, PepeDos, girl, healthbarTexture;
+    int finalScore = declarationStruct.score;
+    UnloadGame();
+    InitGame();
 
-struct Images
-{
-    Image image;
-    Image imageStatic;
-} PepeImg, PepeDosImg, ArrowDownImg, ArrowUpImg, ArrowLeftImg, ArrowRightImg, healthbarImg;
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        states.push(State::GAME);
+    }
 
-struct OriginalArrowSize
-{
-    Vector2 size;
-} ArrowUpSize;
+    if (IsKeyPressed(KEY_ESCAPE))
+    {
+        states.pop();
+    }
 
-//------------------------------------------------------------------------------------
-// Module Functions Declaration (local)
-//------------------------------------------------------------------------------------
-static void InitGame(void);        // Initialize game
-static void UpdateGame(void);      // Update game (one frame)
-static void DrawGame(void);        // Draw game (one frame)
-static void UnloadGame(void);      // Unload game
-static void UpdateDrawFrame(void); // Update and Draw (one frame)
+    if (IsKeyPressed(KEY_E))
+    {
+        CloseWindow();
+    }
+
+    replaybuttonImg.image = LoadImage("Source\\resources\\replaybutton.png");
+    replaybuttonTexture.texture = LoadTextureFromImage(replaybuttonImg.image);
+
+    BeginDrawing();
+    ClearBackground(Color{173, 216, 230});
+
+    DrawTexture(replaybuttonTexture.texture, 550, 250, WHITE);
+    DrawText(TextFormat("Score: %i", finalScore), 1050, 90, 30, BLACK);
+
+    DrawText("Push Space To Replay", 550, 550, 30, BLACK);
+
+    EndDrawing();
+}
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -101,19 +109,31 @@ static void UpdateDrawFrame(void); // Update and Draw (one frame)
 int main(void)
 {
     // Initialization
-
     //-------------------------------------------------------------------------------------------------------
-    InitWindow(screenWidth, screenHeight, "DDDance!!!");
-    InitGame();
+    InitWindow(declarationStruct.screenWidth, declarationStruct.screenHeight, "DDDance!!!");
+    states.push(State::MAIN_MENU);
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
-
     //--------------------------------------------------------------------------------------
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update and Draw
         //-------------------------------------------------------------------------------------------------------
-        UpdateDrawFrame();
+        State current_state = states.top();
+
+        switch (current_state)
+        {
+        case State::MAIN_MENU:
+            do_main_menu_frame();
+            break;
+        case State::GAME:
+            UpdateDrawFrame();
+            break;
+
+        case State::END_GAME:
+            do_end_game_frame();
+            break;
+        }
     }
 
     // De-Initialization
@@ -125,21 +145,18 @@ int main(void)
     return 0;
 }
 
-//------------------------------------------------------------------------------------
-// Module Functions Definitions (local)
-//------------------------------------------------------------------------------------
+// Initialize game (one frame)
 void InitGame(void)
 {
     InitAudioDevice();
-
     // Initialize music/sounds
     mosik.mySound = LoadSound("Source\\resources\\awo.wav");
     kuso.mySound = LoadSound("Source\\resources\\kuso.wav");
     hitsound.mySound = LoadSound("Source\\resources\\hitSound.wav");
 
     // Initialize textures/images
-    PepeImg.image = LoadImageAnim("Source\\resources\\mosik.gif", &animFrames);
-    PepeDosImg.image = LoadImageAnim("Source\\resources\\mosikDos.gif", &animFrames);
+    PepeImg.image = LoadImageAnim("Source\\resources\\mosik.gif", &declarationStruct.animFrames);
+    PepeDosImg.image = LoadImageAnim("Source\\resources\\mosikDos.gif", &declarationStruct.animFrames);
 
     healthbarImg.image = LoadImage("Source\\resources\\healthbar.png");
     healthbarTexture.texture = LoadTextureFromImage(healthbarImg.image);
@@ -149,7 +166,17 @@ void InitGame(void)
     Pepe.texture = LoadTextureFromImage(PepeImg.image);
     PepeDos.texture = LoadTextureFromImage(PepeDosImg.image);
 
-    girl.texture = LoadTexture("Source\\resources\\audacity.png");
+    yellowImg.image = LoadImage("Source\\resources\\yellow.png");
+    yellowTexture.texture = LoadTextureFromImage(yellowImg.image);
+
+    blueImg.image = LoadImage("Source\\resources\\blue.png");
+    blueTexture.texture = LoadTextureFromImage(blueImg.image);
+
+    greenImg.image = LoadImage("Source\\resources\\green.png");
+    greenTexture.texture = LoadTextureFromImage(greenImg.image);
+
+    redImg.image = LoadImage("Source\\resources\\red.png");
+    redTexture.texture = LoadTextureFromImage(redImg.image);
 
     // experimental arrow
     ArrowDownImg.image = LoadImage("Source\\resources\\arrowDown.png");
@@ -199,89 +226,73 @@ void InitGame(void)
     ArrowRight.positionStaticBottom.y = 760;
     ArrowRight.positionStaticBottom.x = 300;
 
-    // arrowsVector.push_back(ArrowLeft);
-    // arrowsVector.push_back(ArrowUp);
-    // arrowsVector.push_back(ArrowDown);
-    // arrowsVector.push_back(ArrowRight);
-
-    // std::cout << arrowsVector.size();
-    // ArrowDown.texture = LoadTexture("Source\\resources\\arrowDown.png");
-    // Image arrowDownImg = LoadImage("Source\\resources\\arrowDown.png"); // NOT WORKING
-    // ArrowUp.texture = LoadTexture("Source\\resources\\arrowUp.png");
-    // ArrowLeft.texture = LoadTexture("Source\\resources\\arrowLeft.png");
-    // ArrowRight.texture = LoadTexture("Source\\resources\\arrowRight.png");
+    hp1.width = 267;
+    hp1.color = Color{238, 75, 43, 255};
+    PlaySound(mosik.mySound);
 }
 
 // Update game (one frame)
 void UpdateGame(void)
 {
-
-    frameCounter++;
-    if (frameCounter >= frameDelay)
+    colorfulCircie.yellow = false;
+    colorfulCircie.red = false;
+    colorfulCircie.blue = false;
+    colorfulCircie.green = false;
+    declarationStruct.frameCounter++;
+    if (declarationStruct.frameCounter >= declarationStruct.frameDelay)
     {
-        currentAnimFrame++;
-        if (currentAnimFrame >= animFrames)
-            currentAnimFrame = 0;
+        declarationStruct.currentAnimFrame++;
+        if (declarationStruct.currentAnimFrame >= declarationStruct.animFrames)
+            declarationStruct.currentAnimFrame = 0;
 
-        nextFrameDataOffset = PepeImg.image.width * PepeImg.image.height * 4 * currentAnimFrame;
-        UpdateTexture(Pepe.texture, ((unsigned char *)PepeImg.image.data) + nextFrameDataOffset);
-        nextFrameDataOffset = PepeDosImg.image.width * PepeDosImg.image.height * 4 * currentAnimFrame;
-        UpdateTexture(PepeDos.texture, ((unsigned char *)PepeDosImg.image.data) + nextFrameDataOffset);
+        declarationStruct.nextFrameDataOffset = PepeImg.image.width * PepeImg.image.height * 4 * declarationStruct.currentAnimFrame;
+        UpdateTexture(Pepe.texture, ((unsigned char *)PepeImg.image.data) + declarationStruct.nextFrameDataOffset);
+        declarationStruct.nextFrameDataOffset = PepeDosImg.image.width * PepeDosImg.image.height * 4 * declarationStruct.currentAnimFrame;
+        UpdateTexture(PepeDos.texture, ((unsigned char *)PepeDosImg.image.data) + declarationStruct.nextFrameDataOffset);
 
-        frameCounter = 0;
+        declarationStruct.frameCounter = 0;
     }
 
-    // to be fixed later
-    // for (unsigned i = 0; i < arrowsVector.size(); ++i)
-    // {
-    //     std::cout << arrowsVector[i].position.y;
-    //     arrowsVector[i].position.y += arrowsVector[i].speed.y;
-
-    //     if (arrowsVector[i].position.y >= 850)
-    //     {
-    //         arrowsVector[i].position.y = 0;
-    //         arrowsVector[i].speed.y = GetRandomValue(0, 15);
-    //     }
-    // }
-
-    ArrowDown.position.y += ArrowDown.speed;
-    ArrowUp.position.y += ArrowUp.speed;
-    ArrowLeft.position.y += ArrowLeft.speed;
-    ArrowRight.position.y += ArrowRight.speed;
-
-    if (ArrowDown.position.y >= 790)
+    if (IsSoundPlaying(mosik.mySound))
     {
-        ArrowDown.position.y = 10;
-        ArrowDown.speed = GetRandomValue(5, 15);
-    }
-    if (ArrowUp.position.y >= 790)
-    {
-        ArrowUp.position.y = 10;
-        ArrowUp.speed = GetRandomValue(5, 15);
-    }
-    if (ArrowLeft.position.y >= 790)
-    {
-        ArrowLeft.position.y = 10;
-        ArrowLeft.speed = GetRandomValue(5, 15);
-    }
-    if (ArrowRight.position.y >= 790)
-    {
-        ArrowRight.position.y = 10;
-        ArrowRight.speed = GetRandomValue(5, 15);
+        ArrowDown.position.y += ArrowDown.speed;
+        ArrowUp.position.y += ArrowUp.speed;
+        ArrowLeft.position.y += ArrowLeft.speed;
+        ArrowRight.position.y += ArrowRight.speed;
+        if (ArrowDown.position.y >= 790)
+        {
+            ArrowDown.position.y = 10;
+            ArrowDown.speed = GetRandomValue(5, 8);
+        }
+        if (ArrowUp.position.y >= 790)
+        {
+            ArrowUp.position.y = 10;
+            ArrowUp.speed = GetRandomValue(5, 8);
+        }
+        if (ArrowLeft.position.y >= 790)
+        {
+            ArrowLeft.position.y = 10;
+            ArrowLeft.speed = GetRandomValue(5, 8);
+        }
+        if (ArrowRight.position.y >= 790)
+        {
+            ArrowRight.position.y = 10;
+            ArrowRight.speed = GetRandomValue(5, 8);
+        }
     }
 
     // control pepe speed
     if (IsKeyPressed(KEY_RIGHT))
-        frameDelay++;
+        declarationStruct.frameDelay++;
     else if (IsKeyPressed(KEY_LEFT))
-        frameDelay--;
-    if (frameDelay > MAX_FRAME_DELAY)
-        frameDelay = MAX_FRAME_DELAY;
-    else if (frameDelay < MIN_FRAME_DELAY)
-        frameDelay = MIN_FRAME_DELAY;
+        declarationStruct.frameDelay--;
+    if (declarationStruct.frameDelay > declarationStruct.MAX_FRAME_DELAY)
+        declarationStruct.frameDelay = declarationStruct.MAX_FRAME_DELAY;
+    else if (declarationStruct.frameDelay < declarationStruct.MIN_FRAME_DELAY)
+        declarationStruct.frameDelay = declarationStruct.MIN_FRAME_DELAY;
 
     // control mosik playing status ON OFF
-    if (IsKeyPressed(KEY_SPACE))
+    if (IsKeyPressed(KEY_P))
     {
         IsSoundPlaying(mosik.mySound) ? PauseSound(mosik.mySound) : PlaySound(mosik.mySound);
     };
@@ -291,54 +302,72 @@ void UpdateGame(void)
     {
         if (ArrowUp.position.y >= 700 && ArrowUp.position.y <= 800)
         {
+            colorfulCircie.blue = true;
             PlaySound(hitsound.mySound);
-            score++;
+            declarationStruct.score++;
         }
         else
         {
             PlaySound(kuso.mySound);
+            declarationStruct.misses--;
+            hp1.width -= 10;
         }
     }
     if (IsKeyPressed(KEY_S))
     {
         if (ArrowDown.position.y >= 700 && ArrowDown.position.y <= 800)
         {
+            colorfulCircie.yellow = true;
             PlaySound(hitsound.mySound);
-            score++;
+            declarationStruct.score++;
         }
         else
         {
             PlaySound(kuso.mySound);
+            declarationStruct.misses--;
+            hp1.width -= 10;
         }
     }
     if (IsKeyPressed(KEY_A))
     {
         if (ArrowLeft.position.y >= 700 && ArrowLeft.position.y <= 800)
         {
+            colorfulCircie.green = true;
             PlaySound(hitsound.mySound);
-            score++;
+            declarationStruct.score++;
         }
         else
         {
             PlaySound(kuso.mySound);
+            declarationStruct.misses--;
+            hp1.width -= 10;
         }
     }
     if (IsKeyPressed(KEY_D))
     {
         if (ArrowRight.position.y >= 700 && ArrowRight.position.y <= 800)
         {
+            colorfulCircie.red = true;
             PlaySound(hitsound.mySound);
-            score++;
+            declarationStruct.score++;
         }
         else
         {
             PlaySound(kuso.mySound);
+            declarationStruct.misses--;
+            hp1.width -= 10;
         }
     }
     if (IsKeyPressed(KEY_K))
     {
 
         PlaySound(kuso.mySound);
+        declarationStruct.misses--;
+        hp1.width--;
+    }
+    if (hp1.width <= 0)
+    {
+        states.push(State::END_GAME);
     }
 }
 
@@ -348,11 +377,11 @@ void DrawGame(void)
     BeginDrawing();
     ClearBackground(WHITE);
 
-    IsSoundPlaying(mosik.mySound) ? DrawText("Press SPACE to PAUSE MOSIK!", 400, 180, 30, BLACK) : DrawText("Press SPACE to PLAY MOSIK!", 400, 180, 30, BLACK);
+    IsSoundPlaying(mosik.mySound) ? DrawText("Press P to PAUSE MOSIK!", 400, 180, 30, BLACK) : DrawText("Press P to PLAY MOSIK!", 400, 180, 30, BLACK);
     DrawText("Press K to PLAY KUSO!", 400, 120, 30, BLACK);
 
     // DrawTexture(girl.texture, -300, 0, WHITE);
-    DrawText(TextFormat("Score: %i", score), 1050, 90, 30, BLACK);
+    DrawText(TextFormat("Score: %i", declarationStruct.score), 1050, 90, 30, BLACK);
     DrawText("Press LEFT to make PEPE DANCE FASTER!", 700, 700, 30, BLACK);
 
     DrawText("Press RIGHT to make PEPE DANCE SLOWER!", 700, 800, 30, BLACK);
@@ -366,7 +395,24 @@ void DrawGame(void)
 
     DrawRectangle(80, 730, 300, 100, Color{0, 0, 255, 150});
 
-    DrawRectangle(1050, 30, 267, 50, Color{180, 8, 8, 150});
+    DrawRectangle(hp1.x, hp1.y, hp1.width, hp1.height, hp1.color); // blue
+
+    if (colorfulCircie.yellow == true)
+    {
+        DrawTexture(yellowTexture.texture, 160, 740, WHITE);
+    }
+    if (colorfulCircie.green == true)
+    {
+        DrawTexture(greenTexture.texture, 100, 740, GREEN);
+    }
+    if (colorfulCircie.red == true)
+    {
+        DrawTexture(redTexture.texture, 280, 740, WHITE);
+    }
+    if (colorfulCircie.blue == true)
+    {
+        DrawTexture(blueTexture.texture, 220, 740, WHITE);
+    }
 
     // experimental arrow
     DrawTexture(ArrowDown.texture, ArrowDown.position.x, ArrowDown.position.y, BLACK);
@@ -393,8 +439,10 @@ void DrawGame(void)
 // Unload game variables
 void UnloadGame(void)
 {
-    UnloadSound(mosik.mySound);     // Unload sound data
     CloseAudioDevice();             // Close audio device
+    UnloadSound(mosik.mySound);     // Unload sound data
+    UnloadSound(kuso.mySound);      // Unload sound data
+    UnloadSound(hitsound.mySound);  // Unload sound data
     UnloadTexture(Pepe.texture);    // Unload texture
     UnloadImage(PepeImg.image);     // Unload image (contains all frames)
     UnloadTexture(PepeDos.texture); // Unload texture
@@ -407,8 +455,26 @@ void UnloadGame(void)
     UnloadTexture(ArrowUp.texture);
     UnloadTexture(ArrowLeft.texture);
     UnloadTexture(ArrowRight.texture);
+    UnloadImage(ArrowDownImg.imageStatic);
+    UnloadImage(ArrowLeftImg.imageStatic);
+    UnloadImage(ArrowRightImg.imageStatic);
+    UnloadImage(ArrowUpImg.imageStatic);
+    UnloadTexture(ArrowDown.textureStatic);
+    UnloadTexture(ArrowUp.textureStatic);
+    UnloadTexture(ArrowLeft.textureStatic);
+    UnloadTexture(ArrowRight.textureStatic);
     UnloadImage(healthbarImg.image);
     UnloadTexture(healthbarTexture.texture);
+    UnloadImage(yellowImg.image);
+    UnloadTexture(yellowTexture.texture);
+    UnloadImage(blueImg.image);
+    UnloadTexture(blueTexture.texture);
+    UnloadImage(greenImg.image);
+    UnloadTexture(greenTexture.texture);
+    UnloadImage(redImg.image);
+    UnloadTexture(redTexture.texture);
+    UnloadImage(playbuttonImg.image);
+    UnloadTexture(playbuttonTexture.texture);
 }
 
 // Update and Draw (one frame)
